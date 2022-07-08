@@ -17,7 +17,7 @@ namespace NZWalks.API.Controllers
             this.mapper = mapper;
         }
         [HttpGet]
-        public async Task<IActionResult> GetAllRegions()
+        public async Task<IActionResult> GetAllRegionsAsync()
         {
             var regions = await regionRepository.GetAllAsync();
 
@@ -39,6 +39,119 @@ namespace NZWalks.API.Controllers
 
             var regionsDTO = mapper.Map<List<Models.DTO.Region>>(regions);
             return Ok(regionsDTO);
+        }
+        [HttpGet]
+        [Route("{id:guid}")]
+        [ActionName("GetRegionAsync")]
+        public async Task<IActionResult> GetRegionAsync(Guid id)
+        {
+            var domainRegion = await regionRepository.GetAsync(id);
+            if (domainRegion == null)
+            {
+                return NotFound();
+            }
+            var regionDTO = mapper.Map<Models.DTO.Region>(domainRegion);
+            return Ok(regionDTO);
+        }
+        [HttpPost] //this method is used to add the resources to the database
+        public async Task<IActionResult> AddRegionAsync(Models.DTO.AddRegionRequest addRegionRequest)
+        {
+            //incoming data from the addRegionRequest object we need to convert to the domain model
+            var domainRegion = new Models.Domain.Region()
+            {
+                Code = addRegionRequest.Code,
+                Area = addRegionRequest.Area,
+                Lat = addRegionRequest.Lat,
+                Long = addRegionRequest.Long,
+                Population = addRegionRequest.Population,
+                Name = addRegionRequest.Name
+            };
+
+            //then pass the details to the repository
+            domainRegion = await regionRepository.AddAsync(domainRegion);
+
+            //then convert the data back to DTO(i.e passing the data to the client)
+            var regionDTO = new Models.DTO.Region()
+            {
+                Id = domainRegion.Id,
+                Code = domainRegion.Code,
+                Area = domainRegion.Area,
+                Lat = domainRegion.Lat,
+                Long = domainRegion.Long,
+                Population = domainRegion.Population,
+                Name = domainRegion.Name
+            };
+
+            return CreatedAtAction(nameof(GetRegionAsync), new { id = regionDTO.Id }, regionDTO);
+        }
+
+        [HttpDelete]
+        [Route("{id:guid}")]
+        public async Task<IActionResult> DeleteRegionAsync(Guid id)
+        {
+            //get the regions from the database
+            var domainRegion = await regionRepository.DeleteAsync(id);
+
+            //if regions is null then we need to send not found back
+            if(domainRegion == null)
+            {
+                return NotFound();
+            }
+
+            //if we find somethings then we will convert the response back to DTO
+            var regionDTO = new Models.DTO.Region()
+            {
+                Id = domainRegion.Id,
+                Code = domainRegion.Code,
+                Area = domainRegion.Area,
+                Lat = domainRegion.Lat,
+                Long = domainRegion.Long,
+                Population = domainRegion.Population,
+                Name = domainRegion.Name
+            };
+
+            //finally give the response back to the client(return Ok Response)
+            return Ok(regionDTO);
+        }
+
+        [HttpPut]
+        [Route("{id:guid}")]
+        public async Task<IActionResult> UpdateRegionAsync([FromRoute] Guid id,[FromBody] Models.DTO.UpdateRegionRequest updateRegionRequest)
+        {
+            //convert the DTO to domain model
+            var domainRegion = new Models.Domain.Region()
+            {
+                Code = updateRegionRequest.Code,
+                Area = updateRegionRequest.Area,
+                Lat = updateRegionRequest.Lat,
+                Long = updateRegionRequest.Long,
+                Population = updateRegionRequest.Population,
+                Name = updateRegionRequest.Name
+            };
+
+            //update the region using repository
+            domainRegion = await regionRepository.UpdateAsync(id, domainRegion);
+
+            //if null then notfound
+            if(domainRegion == null)
+            {
+                return NotFound();
+            }
+
+            //if not null then convert regionDomain back to DTO
+            var regionDTO = new Models.DTO.Region()
+            {
+                Id = domainRegion.Id,
+                Code = domainRegion.Code,
+                Area = domainRegion.Area,
+                Lat = domainRegion.Lat,
+                Long = domainRegion.Long,
+                Population = domainRegion.Population,
+                Name = domainRegion.Name
+            };
+
+            //finally give the response back to the client(return Ok Response)
+            return Ok(regionDTO);
         }
     }
 }
